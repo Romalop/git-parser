@@ -1,54 +1,82 @@
-<!DOCTYPE html>
-    <html>
-        <head>
-            <meta charset="utf8">
-            <title>Парсер фото Прокудин-Горского</title>
-        </head>
-        <body>
-            
-        </body>
-    </html>
 <?php
-    $url = 'https://www.loc.gov/exhibits/empire/empire-ru.html';
+    /*Создаем массив с ссылками на страницы выставок с фотографиями*/
+    $url = 'https://www.loc.gov/exhibits/empire/';
     
-    /*Получаем имя страниц выставки*/
+    //Получаем имя страниц выставки
     $html = file_get_contents($url);
     // Создаем объект DOMDocument
     $dom = new DOMDocument;
-
-    // Загружаем HTML-код
+    // Игнорировать предупреждения и ошибки
+    libxml_use_internal_errors(true);
+    //Загружаем HTML-код
     $dom->loadHTML($html);
 
-    // Получаем все элементы <a> внутри <div> с id="tert_nav"
+    //Получаем все элементы <a> внутри <div> с id="tert_nav"
     $divElement = $dom->getElementById('tert_nav');
     $links = $divElement->getElementsByTagName('a');
 
-    // Инициализируем пустой массив для имен страниц
+    //Инициализируем пустой массив для имен страниц
     $linkPage = [];
 
-    // Обрабатываем каждую найденную ссылку и добавляем имена старниц в массив
+    //Обрабатываем каждую найденную ссылку и добавляем имена старниц в массив
     foreach ($links as $link) {
         // Получаем атрибут href и добавляем его в массив
         $linkPage[] = $link->getAttribute('href');
     }
     
-    /*Получаем ссылки на страниц выставок и добавляем в массив*/
+    //Получаем ссылки на страниц выставок и добавляем в массив//
     foreach($linkPage as $value){
         if (str_ends_with($value, ".html")){
-            $urlExhibitions[] = 'https://www.loc.gov/exhibits/empire/'.$value;
+            $urlExhibitions[] = $url.$value;
         }
     }
-
-    /*Переходим по страницам и собираем все ссылки на картинки в один большой массив*/
     
-?>
+    /*Переходим по страницам и собираем все ссылки на картинки в один большой массив*/
 
-<!--<div id="tert_nav">
-    <strong>Секции выставки:</strong>
-    <a href="gorskii-ru.html">Фотограф царя: Прокудин-Горский</a> | 
-    <a href="architecture-ru.html">Архитектура</a> | 
-    <a href="ethnic-ru.html">Этническое разнообразие</a> | 
-    <a href="transport-ru.html">Транспорт</a> | 
-    <a href="work-ru.html">Люди за работой</a> | Получение цветных изображений | 
-    <a href="//www.loc.gov/pictures/collection/prok/">Поиск по всей коллекции</a>
-</div>-->
+    foreach ($urlExhibitions as $value){
+        $html = file_get_contents($value);
+        $dom = new DOMDocument; 
+        $dom->loadHTML($html);
+        $xpath = new DOMXPath($dom);
+
+        //Используем XPath-выражение для выбора элемента с классом pic-box-alt w-borderr
+        $element = $xpath->query('//div[@class="pic-box-alt w-border"]/a');
+
+        foreach ($element as $value){
+            $linkImg[] = $url.$value->getAttribute('href');
+        }
+    }
+    print_r($linkImg);
+
+    /*Скачиваем изображения и сохраняем их в папку Downloads*/
+
+    // Папка, в которую вы хотите сохранить изображения
+    $downloadFolder = '/Users/roman/Downloads/';
+
+    // Проверяем, существует ли папка Download, и создаем ее, если нет
+    /*if (!is_dir($downloadFolder)) {
+        mkdir($downloadFolder, 0755, true);
+    }*/
+
+    // Итерируем по ссылкам и скачиваем файлы
+    foreach ($linkImg as $index => $value) {
+        // Получаем имя файла из URL
+        $filename = $downloadFolder . 'image' . $index . '.jpg';
+
+        // Скачиваем файл и сохраняем его
+        $fileContent = file_get_contents($value);
+        file_put_contents($filename, $fileContent);
+
+        echo "Файл $filename успешно скачан.\n";
+        sleep(10);
+    }
+
+    echo "Все файлы успешно скачаны в папку Download.\n";
+
+    
+
+   
+    
+    
+
+?>
